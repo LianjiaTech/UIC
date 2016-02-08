@@ -1,0 +1,26 @@
+{{template "layout/head.html" .}}
+
+<div class="container" style="margin-top: 40px;">
+	<div class="row">
+		<div class="col-md-12">
+
+			<div style="margin: 0 auto; max-width: 400px;">
+				<div class="thin-border" style="line-height:24px;">
+					<div class="pull-right">
+						<img src="/user/qrcode/{{.User.Name}}" width="120" height="120">
+					</div>
+					<div>
+						姓名：{{.User.Cnname}}<br>
+						手机：{{.User.Phone}}<br>
+						邮箱：{{.User.Email}}<br>
+						QQ：{{.User.QQ}}<br>
+						IM：{{.User.IM}}<br>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+</div>
+
+{{template "layout/foot.html" .}}

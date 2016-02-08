@@ -1,0 +1,50 @@
+{{template "layout/head.html" .}}
+
+<header class="text-center" style="margin-top:20px;">
+	<img src="/static/img/logo.png" width="60" height="60">
+	<h3 class="font-bold">OpsPlatform</h3>
+</header>
+
+<hr>
+
+<div class="links">
+	<div class="link-head">
+		<span class="glyphicon glyphicon-user"></span> 人员管理
+	</div>
+	<div class="link-body">
+		<ul class="catlist">
+			<li>
+				<a href="/auth/login">平台登录/退出</a>
+			</li>
+			<li>
+				<a href="/me/profile">个人信息维护</a>
+			</li>
+			<li>
+				<a href="/me/users">通讯录</a>
+			</li>
+			<li>
+				<a href="/me/teams">用户组管理</a>
+			</li>
+		</ul>
+	</div>
+
+	<div class="link-head">
+		<span class="glyphicon glyphicon-dashboard"></span> 监控系统
+	</div>
+	<div class="link-body">
+		<ul class="catlist">
+			<li>
+				<a target="_blank" href="{{.Shortcut.FalconPortal}}">监控Portal</a>
+			</li>
+			<li>
+				<a target="_blank" href="{{.Shortcut.FalconDashboard}}">监控趋势图</a>
+			</li>
+			<li>
+				<a target="_blank" href="{{.Shortcut.FalconAlarm}}">未恢复的报警</a>
+			</li>
+		</ul>
+	</div>
+
+</div>
+
+{{template "layout/foot.html" .}}

@@ -1,0 +1,90 @@
+{{template "layout/head.html" .}}
+
+<script>
+$(function() {
+	$("#query").keypress(function(e) {
+		var key = e.which;
+		if (key == 13) {
+			query_user();
+		}
+	});
+});
+</script>
+
+<div class="container" style="margin-top: 20px;">
+	<div class="row">
+		<div class="col-md-12">
+
+			<div style="margin: 0 auto; max-width: 400px;">
+
+				<ol class="breadcrumb">
+					<li><a href="/">首页</a></li>
+					<li class="active">通讯录</li>
+				</ol>
+
+				<div class="form-inline mb20" role="form">
+					<div class="form-group">
+						<input type="text" value="{{.Query}}" class="form-control" id="query"
+						placeholder="name">
+					</div>
+					<button type="button" onclick="query_user();" class="btn btn-default">
+						<span class="glyphicon glyphicon-search"></span>
+						Search
+					</button>
+                    <!--
+                                        <a href="/me/user/c" class="btn btn-default pull-right">
+                                                <span class="glyphicon glyphicon-plus"></span>
+                                                Add
+                                        </a>
+                    -->
+				</div>
+
+				<div class="us">
+					{{range .Users}}
+					<div class="u">
+						{{if $.IamRoot}}
+						<div class="pull-right">
+							{{if gt .Role 0}}
+							<input type="checkbox" checked="checked" onclick="set_role('{{.Name}}', this);">
+							{{else}}
+							<input type="checkbox" onclick="set_role('{{.Name}}', this);">
+							{{end}}
+							管理员
+						</div>
+						{{end}}
+						登录账号：{{.Name}}， 中文名：{{.Cnname}}
+						<a href="/about/{{.Name}}" target="_blank" style="text-decoration:none;">
+							<span class="glyphicon glyphicon-qrcode"></span>
+						</a>
+						<br>
+						邮箱: {{.Email}}<br>
+						手机: {{.Phone}}<br>
+						IM：{{.IM}}， QQ：{{.QQ}}
+
+						{{if gt $.Me.Role 0}}
+						<div class="pull-right">
+							<a href="/target-user/edit?name={{.Name}}" class="orange" style="text-decoration:none;">
+								<span class="glyphicon glyphicon-edit"></span>
+							</a>
+							<span class="cut-line">¦</span>
+                            <!--
+							<a href="javascript:delete_user('{{.Name}}');" class="orange" style="text-decoration:none;">
+								<span class="glyphicon glyphicon-trash"></span>
+							</a>
+                            -->
+						</div>
+						{{end}}
+						<hr>
+					</div>
+					{{end}}
+				</div>
+
+				{{template "layout/paginator.html" .}}
+
+			</div>
+
+		</div>
+	</div>
+</div>
+
+{{template "layout/foot.html" .}}

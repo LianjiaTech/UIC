@@ -1,0 +1,40 @@
+{
+    "log": "debug",
+    "company": "MI",
+    "http": {
+        "enabled": true,
+        "listen": "0.0.0.0:1234"
+    },
+    "cache": {
+        "enabled": true,
+        "redis": "127.0.0.1:6379",
+        "idle": 10,
+        "max": 1000,
+        "timeout": {
+            "conn": 10000,
+            "read": 5000,
+            "write": 5000
+        }
+    },
+    "salt": "",
+    "canRegister": true,
+    "ldap": {
+        "enabled": false,
+        "addr": "ldap.example.com:389",
+        "baseDN": "dc=example,dc=com",
+        "bindDN": "cn=mananger,dc=example,dc=com",
+        "bindPasswd": "12345678",
+        "userField": "uid",
+        "attributes": ["sn","mail","telephoneNumber"]
+    },
+    "uic": {
+        "addr": "root:@tcp(127.0.0.1:3306)/uic?charset=utf8&loc=Asia%2FChongqing",
+        "idle": 10,
+        "max": 100
+    },
+    "shortcut": {
+        "falconPortal": "http://11.11.11.11:5050/",
+        "falconDashboard": "http://11.11.11.11:7070/",
+        "falconAlarm": "http://11.11.11.11:9912/"
+    }
+}

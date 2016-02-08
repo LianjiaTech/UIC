@@ -1,0 +1,33 @@
+{{template "layout/head.html" .}}
+
+<div class="container" style="margin-top: 40px;">
+	<div class="row">
+		<div class="col-md-12">
+
+			<div style="margin: 0 auto; max-width: 400px;">
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						<h3 class="panel-title green">登录成功</h3>
+					</div>
+					<div class="panel-body">
+
+						<div class="green mb20">welcome, {{.CurrentUser.Name}} :-)</div>
+
+						<ul class="catlist">
+							<li>
+								<a href="/">首页</a>
+							</li>
+							<li>
+								<a href="/me/logout">退出</a>
+							</li>
+						</ul>
+
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+</div>
+
+{{template "layout/foot.html" .}}
