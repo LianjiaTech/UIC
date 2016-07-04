@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/astaxie/beego/orm"
 	"github.com/toolkits/cache"
+    "github.com/open-falcon/fe/utils"
 	"github.com/toolkits/logger"
 	"github.com/toolkits/slice"
 	"time"
@@ -99,6 +100,14 @@ func InsertRegisterUser(name, password string) (int64, error) {
 }
 
 func (this *User) Update() (int64, error) {
+    modilist := make(map[string][]string)
+    modilist["sn"] = []string{this.Cnname}
+    modilist["mobile"] = []string{this.Phone}
+    res, err := utils.Ldapmonify("10.10.3.102:389", "DC=lianjia,DC=com", "CN=updateuser,OU=SysUser,DC=lianjia,DC=com", "wqLTYYS8dpeUT26R", "mail", this.Email, modilist)
+    if res != true || err != nil {
+        fmt.Println("User Update Ldap Error: ",res,err)
+        return 0,err    
+    }
 	num, err := orm.NewOrm().Update(this)
 
 	if err == nil && num > 0 {
@@ -119,6 +128,10 @@ func (this *User) CanWrite(t *Team) bool {
 	}
 
 	return slice.ContainsInt64(uids, this.Id)
+}
+
+func (this *User) IsRoot() bool {
+    return this.Role == ROOT_ADMIN_ROLE
 }
 
 func Users() orm.QuerySeter {
@@ -163,4 +176,53 @@ func DeleteUserById(id int64) (int64, error) {
 	}
 
 	return r.RowsAffected()
+}
+
+func FlushTeamidCache( uid int64) {
+	key := fmt.Sprintf("u:tids:%d", uid)
+	cache.Delete(key)
+}
+
+func TeamIds(uid int64) []int64 {
+	key := fmt.Sprintf("u:tids:%d", uid)
+	tids := []int64{}
+	if err := cache.Get(key, &tids); err != nil {
+		tids, err = Tids(uid)
+		if err == nil {
+			go cache.Set(key, tids, time.Hour)
+		}
+	}
+	return tids
+}
+
+func GetTeamsByUserName( name string) []map[string]interface{} {
+	ret := make([]map[string]interface{},0)
+	if name == "" {
+		return ret
+	}
+
+    uid := ReadUserIdByName( name )
+    tids := TeamIds( uid )
+
+    size := len(tids)
+	if size == 0 {
+		return ret
+	}
+
+	for _, tid := range tids {
+		t := ReadTeamById(tid)
+		if t == nil {
+			continue
+		}
+
+        r := make(map[string]interface{})
+        r["id"] = t.Id
+        r["name"] = t.Name
+        r["resume"] = t.Resume
+        r["creator"] = t.Creator
+        r["email"] = t.Email
+		ret = append(ret, r)
+	}
+
+    return ret
 }

@@ -48,6 +48,7 @@ func (this *AuthController) LoginGet() {
 func (this *AuthController) LoginPost() {
 	name := this.GetString("name", "")
 	password := this.GetString("password", "")
+    //qtyep := this.GetString("type","page")
 
 	if name == "" || password == "" {
 		this.ServeErrJson("name or password is blank")
@@ -111,6 +112,7 @@ func (this *AuthController) LoginPost() {
 				Cnname: userSn,
 				Phone:  userTel,
 				Email:  userEmail,
+                Created: time.Now(),
 			}
 			_, err = u.Save()
 			if err != nil {

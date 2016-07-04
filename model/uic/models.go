@@ -28,6 +28,8 @@ type Team struct {
 	Name    string    `json:"name"`
 	Resume  string    `json:"resume"`
 	Creator int64     `json:"creator"`
+    Email   string    `json:"email"`
+    Secretkey   string  `json:"secretkey"`
 	Created time.Time `json:"-"`
 }
 

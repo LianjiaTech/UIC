@@ -9,6 +9,7 @@ import (
 	"github.com/toolkits/str"
 	"github.com/toolkits/web"
 	"strings"
+	"time"
 )
 
 type UserController struct {
@@ -23,9 +24,10 @@ func (this *UserController) CreateRoot() {
 	}
 
 	userPtr := &User{
-		Name:   "root",
-		Passwd: str.Md5Encode(g.Config().Salt + password),
-		Role:   2,
+		Name:    "root",
+		Passwd:  str.Md5Encode(g.Config().Salt + password),
+		Role:    2,
+		Created: time.Now(),
 	}
 
 	_, err := userPtr.Save()
@@ -52,6 +54,8 @@ func (this *UserController) ProfileGet() {
 func (this *UserController) ProfilePost() {
 	im := strings.TrimSpace(this.GetString("im", ""))
 	qq := strings.TrimSpace(this.GetString("qq", ""))
+    cnname := strings.TrimSpace(this.GetString("cnname",""))
+    phone := strings.TrimSpace(this.GetString("phone",""))
 
 	if utils.HasDangerousCharacters(im) {
 		this.ServeErrJson("im is invalid")
@@ -66,6 +70,8 @@ func (this *UserController) ProfilePost() {
 	me := this.Ctx.Input.GetData("CurrentUser").(*User)
 	me.IM = im
 	me.QQ = qq
+    me.Cnname = cnname
+    me.Phone = phone
 
 	me.Update()
 	this.ServeOKJson()
@@ -188,13 +194,30 @@ func (this *UserController) Users() {
 			}
 			total = 1
 
-            //查询此用户的role
-            obj := ReadUserByName( query )
-            if obj != nil {
-                u.Role = obj.Role    
-                u.QQ = obj.QQ
-                u.IM = obj.IM
-            }
+			//查询此用户的role
+			obj := ReadUserByName(query)
+			if obj == nil {
+				if userSn != "" {
+					// 说明用户不存在
+					obj = &User{
+						Name:    query,
+						Passwd:  "",
+						Cnname:  userSn,
+						Phone:   userTel,
+						Email:   userMail,
+						Created: time.Now(),
+					}
+					_, err = obj.Save()
+					if err != nil {
+						this.ServeErrJson("insert user fail " + err.Error())
+						return
+					}
+				}
+			} else {
+				u.Role = obj.Role
+				u.QQ = obj.QQ
+				u.IM = obj.IM
+			}
 			us = append(us, u)
 		}
 		pager = this.SetPaginator(per, total)
@@ -312,6 +335,11 @@ func (this *UserController) EditGet() {
 }
 
 func (this *UserController) EditPost() {
+	me := this.Ctx.Input.GetData("CurrentUser").(*User)
+	if me.Role != ROOT_ADMIN_ROLE {
+		this.ServeErrJson("no privilege")
+		return
+	}
 	cnname := strings.TrimSpace(this.GetString("cnname", ""))
 	email := strings.TrimSpace(this.GetString("email", ""))
 	phone := strings.TrimSpace(this.GetString("phone", ""))
@@ -389,6 +417,7 @@ func (this *UserController) ResetPassword() {
 
 func (this *UserController) Query() {
 	query := strings.TrimSpace(this.GetString("query", ""))
+	query = strings.ToLower(query)
 	limit := this.MustGetInt("limit", 10)
 
 	if utils.HasDangerousCharacters(query) {
@@ -397,7 +426,53 @@ func (this *UserController) Query() {
 	}
 
 	var users []User
-	QueryUsers(query).Limit(limit).All(&users, "Id", "Name", "Cnname", "Email")
+	QueryUsers(query).Limit(limit).All(&users, "Id", "Name", "Cnname", "Email", "Phone")
+
+	isInLdap := false
+	for _, v := range users {
+		if strings.ToLower(v.Name) == query {
+			isInLdap = true
+		}
+	}
+
+	if isInLdap == false {
+		user_attributes, err := utils.Ldapsearch(g.Config().Ldap.Addr,
+			g.Config().Ldap.BaseDN,
+			g.Config().Ldap.BindDN,
+			g.Config().Ldap.BindPasswd,
+			g.Config().Ldap.UserField,
+			query,
+			g.Config().Ldap.Attributes)
+		userSn := ""
+		userMail := ""
+		userTel := ""
+		if err == nil && len(user_attributes) > 0 {
+			userSn = user_attributes["sn"]
+			userMail = user_attributes["mail"]
+			userTel = user_attributes["telephoneNumber"]
+
+			u := ReadUserByName(query)
+			if u == nil {
+				// 说明用户不存在
+				u = &User{
+					Name:    query,
+					Passwd:  "",
+					Cnname:  userSn,
+					Phone:   userTel,
+					Email:   userMail,
+					Created: time.Now(),
+				}
+				_, err = u.Save()
+				if err != nil {
+					this.ServeErrJson("insert user fail " + err.Error())
+					return
+				}
+			}
+
+			users = append(users, *u)
+		}
+	}
+
 	this.Data["json"] = map[string]interface{}{"users": users}
 	this.ServeJSON()
 }
@@ -453,11 +528,18 @@ func (this *UserController) About() {
 			userTel = user_attributes["telephoneNumber"]
 
 			u = &User{
-				Name:   name,
-				Passwd: "",
-				Cnname: userSn,
-				Phone:  userTel,
-				Email:  userMail,
+				Name:    name,
+				Passwd:  "",
+				Cnname:  userSn,
+				Phone:   userTel,
+				Email:   userMail,
+				Created: time.Now(),
+			}
+
+			udb := ReadUserByName(name)
+			if udb != nil {
+				u.QQ = udb.QQ
+				u.IM = udb.IM
 			}
 		}
 	}
@@ -487,4 +569,50 @@ func (this *UserController) QrCode() {
 
 	this.Ctx.Output.ContentType("image")
 	this.Ctx.Output.Body(c.PNG())
+}
+
+func (this *UserController) Teams() {
+	userName := strings.TrimSpace(this.GetString("name", ""))
+	if userName == "" {
+		this.ServeErrJson("name is blank")
+		return
+	}
+
+	this.Data["json"] = map[string]interface{}{
+		"teams": GetTeamsByUserName(userName),
+		"msg":   "",
+	}
+	this.ServeJSON()
+
+}
+
+func (this *UserController) TeamsAdmin() {
+	userName := strings.TrimSpace(this.GetString("name", ""))
+	teamNames := strings.TrimSpace(this.GetString("teams", ""))
+	if userName == "" || teamNames == "" {
+		this.ServeErrJson("name is blank")
+	}
+
+	userObj := ReadUserByName(userName)
+	if userObj == nil {
+		this.ServeErrJson("The User is not exists!")
+	}
+
+	res := make(map[string]interface{})
+	teamArr := strings.Split(teamNames, ",")
+	for _, teamName := range teamArr {
+		t := ReadTeamByName(teamName)
+		if t == nil {
+			continue
+		}
+
+		res[teamName] = (t.IsAdmin(userObj.Id) || userObj.Role == ROOT_ADMIN_ROLE || t.Creator == userObj.Id)
+	}
+
+	this.Data["json"] = map[string]interface{}{
+		"admin": res,
+		"msg":   "",
+	}
+	this.ServeJSON()
+
 }

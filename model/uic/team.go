@@ -139,6 +139,11 @@ func ReadTeamById(id int64) *Team {
 	return &obj
 }
 
+func ClearTeamCacheById(id int64) {
+    key := fmt.Sprintf("team:obj:%d", id )   
+    go cache.Delete(key)
+}
+
 func SelectTeamIdByName(name string) int64 {
 	if name == "" {
 		return 0
@@ -182,8 +187,8 @@ func (this *Team) Save() (int64, error) {
 	return orm.NewOrm().Insert(this)
 }
 
-func SaveTeamAttrs(name, resume string, creator int64) (int64, error) {
-	t := &Team{Name: name, Resume: resume, Creator: creator}
+func SaveTeamAttrs(name, resume string, creator int64,email string, sk string) (int64, error) {
+	t := &Team{Name: name, Resume: resume, Creator: creator, Email: email, Secretkey: sk,Created: time.Now()}
 	return t.Save()
 }
 
@@ -241,6 +246,7 @@ func PutAdminInTeam(tid int64, uids string) error {
 
 	return nil
 }
+
 func (this *Team) UpdateUsers(userIdstr string) error {
 	if err := UnlinkByTeamId(this.Id); err != nil {
 		return err
@@ -248,11 +254,22 @@ func (this *Team) UpdateUsers(userIdstr string) error {
 
 	cache.Delete(fmt.Sprintf("t:uids:%d", this.Id))
 
+    uidArr := strings.Split(userIdstr,",")
+    for _,uidS := range(uidArr) {
+        uId, _ := strconv.ParseInt(uidS,10,64)
+        FlushTeamidCache( uId )
+    }
+
 	return PutUsersInTeam(this.Id, userIdstr)
 }
 
 func (this *Team) UpdateAdmins(userIdstr string) error {
 	cache.Delete(fmt.Sprintf("t_admin:uids:%d", this.Id))
+    uidArr := strings.Split(userIdstr,",")
+    for _,uidS := range(uidArr) {
+        uId, _ := strconv.ParseInt(uidS,10,64)
+        FlushTeamidCache( uId )
+    }
 
 	return PutAdminInTeam(this.Id, userIdstr)
 }
@@ -363,7 +380,13 @@ func (this *Team) Remove() error {
 }
 
 func UnlinkByTeamId(id int64) error {
-	_, err := orm.NewOrm().Raw("DELETE FROM `rel_team_user` WHERE `tid` = ?", id).Exec()
+	uids, err := Uids(id)
+	if err == nil && len(uids) > 0 {
+		for i := 0; i < len(uids); i++ {
+			cache.Delete(fmt.Sprintf("u:tids:%d", uids[i]))
+		}
+	}
+	_, err = orm.NewOrm().Raw("DELETE FROM `rel_team_user` WHERE `tid` = ?", id).Exec()
 	return err
 }
 
@@ -409,6 +432,19 @@ func (this *Team) AdminUserIds() string {
 	}
 
 	return strings.Join(arr, ",")
+}
+
+func (this *Team) IsAdmin(uid int64) bool {
+    adminUids := this.AdminUserIds()    
+	uidArr := strings.Split(adminUids, ",")
+    for _,v := range uidArr {
+        uInt ,_ := strconv.ParseInt(v, 10, 64)  
+        if uInt == uid {
+            return true    
+        }
+    }
+    
+    return false
 }
 
 func (this *Team) Update() (int64, error) {

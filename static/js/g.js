@@ -169,12 +169,15 @@ function create_team() {
 	$.post('/me/team/c', {
 		'name' : $("#name").val(),
 		'resume' : $("#resume").val(),
+		'admins' : $("#teamadmins").val(),
+		'email' : $("#email").val(),
 		'users' : $("#users").val()
 	}, function(json) {
 		if (json.msg.length > 0) {
 			err_message_quietly(json.msg);
 		} else {
 			ok_message_quietly('create team successfully');
+            location.href = "/me/teams";
 		}
 	});
 }
@@ -183,6 +186,7 @@ function edit_team(tid) {
 	$.post('/target-team/edit', {
 		'resume' : $("#resume").val(),
 		'users' : $("#users").val(),
+        'teamemail' : $("#teamemail").val(),
 		'admins' : $("#teamadmins").val(),
 		'id': tid
 	}, function(json) {

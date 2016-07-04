@@ -18,6 +18,8 @@ func ConfigRoutes() {
 	beego.Router("/sso/logout/:sig:string", &SsoController{}, "get:Logout")
 
 	beego.Router("/user/query", &UserController{}, "get:Query")
+	beego.Router("/user/teams", &UserController{}, "get:Teams")
+	beego.Router("/user/teamadmin", &UserController{}, "get:TeamsAdmin")
 	beego.Router("/user/in", &UserController{}, "get:In")
 	beego.Router("/user/qrcode/:name:string", &UserController{}, "get:QrCode")
 	beego.Router("/about/:name:string", &UserController{}, "get:About")
@@ -25,6 +27,7 @@ func ConfigRoutes() {
 	beego.Router("/team/users", &TeamController{}, "get:Users")
 	beego.Router("/team/admins", &TeamController{}, "get:Admins")
 	beego.Router("/team/query", &TeamController{}, "get:Query")
+	beego.Router("/team/checksk", &TeamController{}, "get:Checksk")
 	beego.Router("/team/all", &TeamController{}, "get:All")
 
 	loginRequired :=

@@ -55,7 +55,7 @@ var FilterTargetUser = func(ctx *context.Context) {
 		if err == nil {
 			userSn = user_attributes["sn"]
 			userMail = user_attributes["mail"]
-			userTel = user_attributes["telephoneNumber"]
+			userTel = user_attributes["mobile"]
 		}
 
 		u = &uic.User{

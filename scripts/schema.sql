@@ -8,6 +8,8 @@ CREATE TABLE `team` (
   `name` varchar(64) NOT NULL,
   `resume` varchar(255) not null default '',
   `creator` int(10) unsigned NOT NULL DEFAULT '0',
+  `email` varchar(255) NOT NULL DEFAULT '',
+  `secretkey` varchar(32) NOT NULL DEFAULT '',
   `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_team_name` (`name`)
